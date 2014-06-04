@@ -1,7 +1,10 @@
 import sublime, sublime_plugin
-import subprocess
+import os
 
 class FlashbackCommand(sublime_plugin.WindowCommand):
     def run(self):
-        git_log = subprocess.check_output("git log")
-        print(git_log)
+        def highlight(i):
+            pass
+
+        git_log = subprocess.check_output(['git', 'log', '--pretty=format:"[%h] %s %n%cr by %cN (%ce)"'])
+        self.window.show_quick_panel(git_log, highlight)
