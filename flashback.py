@@ -8,7 +8,8 @@ class FlashbackCommand(sublime_plugin.WindowCommand):
 
         git_log = subprocess.check_output(['git', 'log', '--pretty=format:"[%h] %s%n%cD (%cr)%n%cN (%ce)---"']).split(b'---')
         items = [self.split(log) for log in git_log]
-        print(items)
+        items = [i for i in items if i]
+        print("Git log response: {}".format(items))
         self.window.show_quick_panel(items, highlight)
 
     def split(self, log):
