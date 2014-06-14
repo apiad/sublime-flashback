@@ -5,6 +5,8 @@ import subprocess
 
 class FlashbackCommand(sublime_plugin.TextCommand):
     def run(self, edit):
+        current_content = self.view.substr(sublime.Region(0, self.view.size()))
+
         git_log = subprocess.check_output(['git', 'log', '--pretty=format:"%s%n'
                                                          '[%h] %cN (%ce)%n%cD (%cr)---"',
                                            self.view.file_name()])
@@ -18,11 +20,12 @@ class FlashbackCommand(sublime_plugin.TextCommand):
 
         def checkout(i):
             if i < 0:
+                self.view.run_command('replace_content', {'text': current_content})
                 return
 
-            commit = get_commit(i)
-            cmd = 'git checkout {} {}'.format(commit, self.view.file_name())
-            print("Flashback :: Executing %s" % cmd)
+            # commit = get_commit(i)
+            # cmd = 'git checkout {} {}'.format(commit, self.view.file_name())
+            # print("Flashback :: Executing %s" % cmd)
             # os.system(cmd)
 
         def show_diff(i):
@@ -33,7 +36,7 @@ class FlashbackCommand(sublime_plugin.TextCommand):
             path = os.path.basename(self.view.file_name())
             diff = subprocess.check_output(['git', 'show', commit + ":" + path])
 
-            self.view.run_command('replace_content', {'text': diff})
+            self.view.run_command('replace_content', {'text': diff.decode(self.view.encoding())})
 
         sublime.active_window().show_quick_panel(items, checkout, 0, 0, show_diff)
 
