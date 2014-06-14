@@ -33,10 +33,15 @@ class FlashbackCommand(sublime_plugin.TextCommand):
             path = os.path.basename(self.view.file_name())
             diff = subprocess.check_output(['git', 'show', commit + ":" + path])
 
-            self.view.replace(edit, sublime.Region(0, self.view.size()), diff)
+            self.view.run_command('replace_content', {'text': diff})
 
         sublime.active_window().show_quick_panel(items, checkout, 0, 0, show_diff)
 
     def split(self, log):
         parts = [l.decode().strip('"') for l in log.split(b"\n")]
         return [p for p in parts if p]
+
+
+class ReplaceContentCommand(sublime_plugin.TextCommand):
+    def run(self, edit, text):
+        self.view.replace(edit, sublime.Region(0, self.view.size()), text)
