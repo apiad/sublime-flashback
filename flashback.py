@@ -3,6 +3,7 @@ import os
 import subprocess
 import threading
 import datetime
+import time
 
 
 def async(function):
@@ -55,6 +56,16 @@ class FlashbackCommand(sublime_plugin.TextCommand):
         current_content = self.view.substr(sublime.Region(0, self.view.size()))
         items = []
 
+        base = self.find_git_root(self.view.file_name())
+
+        if base is None:
+            sublime.status_message("This file is not in version control")
+
+        path = self.view.file_name()[len(base):]
+
+        if path[0] == '/':
+            path = path[1:]
+
         with loading("Processing history"):
             git_log = subprocess.check_output(['git', 'log', '--pretty=format:"%s%n'
                                                              '[%h] %cN (%ce)%n%cD (%cr)---"',
@@ -83,16 +94,24 @@ class FlashbackCommand(sublime_plugin.TextCommand):
                 return
 
             commit = get_commit(i)
-            path = os.path.basename(self.view.file_name())
-            diff = subprocess.check_output(['git', 'show', commit + ":" + path])
+            diff = subprocess.check_output(['git', 'show', '--encoding=utf8', commit + ":" + path])
 
-            self.view.run_command('replace_content', {'text': diff.decode(self.view.encoding())})
+            self.view.run_command('replace_content', {'text': diff.decode('utf8')})
 
         sublime.active_window().show_quick_panel(items, checkout, 0, 0, show_diff)
 
     def split(self, log):
         parts = [l.decode().strip('"') for l in log.split(b"\n")]
         return [p for p in parts if p]
+
+    def find_git_root(self, fn):
+        while fn != "/":
+            if os.path.exists(os.path.join(fn, '.git')):
+                return fn
+
+            fn = os.path.abspath(os.path.join(fn, '..'))
+
+        return None
 
 
 class ReplaceContentCommand(sublime_plugin.TextCommand):
