@@ -1,3 +1,10 @@
+###Linux###
+
+.*
+!.gitignore
+*~
+
+
 ###Python###
 
 *.py[cod]
@@ -42,10 +49,3 @@ nosetests.xml
 
 # SublimeText project files
 *.sublime-workspace
-
-
-###Linux###
-
-.*
-!.gitignore
-*~
