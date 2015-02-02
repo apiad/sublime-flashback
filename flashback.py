@@ -1,3 +1,4 @@
+ # coding=utf-8
 import sublime, sublime_plugin
 import os
 import subprocess
@@ -57,9 +58,11 @@ class FlashbackCommand(sublime_plugin.TextCommand):
         items = []
 
         base = self.find_git_root(self.view.file_name())
+        print(base)
 
         if base is None:
             sublime.status_message("This file is not in version control")
+            return
 
         path = self.view.file_name()[len(base):]
 
@@ -67,15 +70,26 @@ class FlashbackCommand(sublime_plugin.TextCommand):
             path = path[1:]
 
         with loading("Processing history"):
-            git_log = subprocess.check_output(['git', 'log', '--pretty=format:"%s%n'
-                                                             '[%h] %cN (%ce)%n%cD (%cr)---"',
-                                               self.view.file_name()])
-            git_log = git_log.split(b'---')
+            fn = self.view.file_name()
+            args = ['git', 'log', '--pretty=format:"%s%n[%h] %cN (%ce)%n%cD (%cr)---"', fn]
 
-            now = str(datetime.datetime.now()) + " (Present)"
+            currentpath = os.getcwd()
+            os.chdir(base)
+            try:
+                git_log = subprocess.check_output(args)
+                git_log = git_log.split(b'---')
 
-            items = [self.split(log) for log in git_log]
-            items = [['HEAD', '', now]] + [i for i in items if i]
+                now = str(datetime.datetime.now()) + " (Present)"
+
+                items = [self.split(log) for log in git_log]
+                items = [['HEAD', '', now]] + [i for i in items if i]
+
+            except Exception as e:
+                msg = "{0}".format(e)
+                print("Can't get git log: {0}".format(msg))
+                items = [[msg, "Can't get git log", '']]
+
+            os.chdir(currentpath)
 
         def get_commit(i):
             return items[i][1].split()[0][1:-1]
@@ -94,7 +108,10 @@ class FlashbackCommand(sublime_plugin.TextCommand):
                 return
 
             commit = get_commit(i)
+            currentpath = os.getcwd()
+            os.chdir(base)
             diff = subprocess.check_output(['git', 'show', '--encoding=utf8', commit + ":" + path])
+            os.chdir(currentpath)
 
             self.view.run_command('replace_content', {'text': diff.decode('utf8')})
 
